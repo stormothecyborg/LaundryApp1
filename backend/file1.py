@@ -63,27 +63,25 @@ async def check_status():
 
     # Calculate waiting time for the first user in the queue
     waiting_times = []
-    for user in user_queues.queue:
+    for i, user in enumerate(user_queues.queue):
         wash_time = user["wash_time"]
         waiting_times.append(wash_time)
+        # Update waiting time for the first user in the queue
+        if i == 0:
+            user["waiting_time"] = wash_time
+            user["machine_available_at"] = (
+                current_time + timedelta(minutes=wash_time)
+            ).strftime("%I:%M %p")  # Add timestamp for machine availability
+
     shortest_wash_time = min(waiting_times) if waiting_times else 0
 
     # Prepare response
     status_response = {
         "user_assignments": user_assignments,
-        "user_queues": [],
+        "user_queues": list(user_queues.queue),  # Convert the queue to a list for serialization
     }
 
-    # Add waiting time for the first user in the queue
-    if user_queues.qsize() > 0:
-        user_queues.queue[0]["waiting_time"] = shortest_wash_time
-        user_queues.queue[0]["machine_available_at"] = (
-            current_time + timedelta(minutes=shortest_wash_time)
-        ).strftime("%I:%M %p")  # Add timestamp for machine availability
-        status_response["user_queues"] = list(user_queues.queue)
-
     return status_response
-
 
 @app.get("/user_status")
 async def check_user_status(user_name: str):
@@ -140,7 +138,7 @@ async def check_user_status(user_name: str):
 
     return {"message": "User not found"}
 
-if __name__ == "__main__":
+if __name__ == "_main_":
     import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=8080)
